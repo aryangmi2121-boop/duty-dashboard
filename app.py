@@ -16,7 +16,7 @@ shifts = [
 
 leave_types = ["None", "CR", "CL", "NH", "Leave", "Rest"]
 
-# ---------------- SESSION ----------------
+# ---------------- SESSION STORAGE ----------------
 if "roster" not in st.session_state:
     st.session_state.roster = []
 
@@ -43,7 +43,7 @@ def check_conflict(date, employee, leave):
             return f"🚨 Employee marked {leave}, cannot assign duty!"
     return None
 
-# ---------------- ASSIGN ----------------
+# ---------------- ASSIGN DUTY ----------------
 if st.button("Assign Duty"):
     if employee.strip() == "":
         st.warning("Enter employee name")
@@ -61,7 +61,7 @@ if st.button("Assign Duty"):
             })
             st.success("✅ Duty Assigned")
 
-# ---------------- ROSTER ----------------
+# ---------------- ROSTER SECTION ----------------
 st.subheader("📋 Roster")
 
 df = pd.DataFrame(st.session_state.roster)
@@ -72,7 +72,11 @@ if not df.empty:
     # ---------------- SWAP SYSTEM ----------------
     st.markdown("### 🔄 Swap Duty (Replace Employee)")
 
-    idx = st.number_input("Row Index to Replace", min_value=0, max_value=len(df)-1 if len(df)>0 else 0)
+    idx = st.number_input(
+        "Row Index to Replace",
+        min_value=0,
+        max_value=len(df)-1
+    )
 
     new_emp = st.text_input("New Employee Name")
 
@@ -81,6 +85,20 @@ if not df.empty:
             st.session_state.roster[idx]["Employee"] = new_emp
             st.success("✅ Duty Swapped")
             st.rerun()
+
+    # ---------------- DELETE ROW ----------------
+    st.markdown("### 🗑️ Delete Specific Row")
+
+    delete_idx = st.number_input(
+        "Row Index to Delete",
+        min_value=0,
+        max_value=len(df)-1
+    )
+
+    if st.button("Delete Row"):
+        st.session_state.roster.pop(delete_idx)
+        st.success("Row deleted successfully!")
+        st.rerun()
 
     # ---------------- CALENDAR VIEW ----------------
     st.markdown("### 📅 Calendar View")
@@ -94,14 +112,13 @@ if not df.empty:
 
     st.dataframe(cal, use_container_width=True)
 
-else:
-    st.info("No roster yet")
-
-# ---------------- DOWNLOAD ----------------
-if not df.empty:
+    # ---------------- DOWNLOAD ----------------
     st.download_button(
         "📥 Download Excel",
         df.to_csv(index=False),
         file_name="roster.csv",
         mime="text/csv"
     )
+
+else:
+    st.info("No roster yet")
