@@ -106,12 +106,16 @@ if not df.empty:
 
     st.dataframe(cal, use_container_width=True)
 
-    # ---------------- DOWNLOAD ----------------
+    # ---------------- DOWNLOAD (SINGLE SHEET) ----------------
+    st.markdown("### 📥 Download Final Roster")
+
+    download_df = df.sort_values(by=["Date", "Department", "Shift"])
+
     st.download_button(
-        "📥 Download",
-        df.to_csv(index=False),
-        "roster.csv",
-        "text/csv"
+        "📥 Download Full Roster (Single Sheet)",
+        download_df.to_csv(index=False),
+        file_name="final_roster.csv",
+        mime="text/csv"
     )
 
 else:
