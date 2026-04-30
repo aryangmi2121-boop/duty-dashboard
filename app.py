@@ -16,11 +16,11 @@ shifts = [
 
 status_types = ["Duty", "CR", "CL", "NH", "Leave", "Rest"]
 
-# ---------------- SESSION ----------------
+# ---------------- SESSION STORAGE ----------------
 if "roster" not in st.session_state:
     st.session_state.roster = []
 
-# ---------------- INPUT ----------------
+# ---------------- INPUT UI ----------------
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -34,15 +34,15 @@ with col2:
 with col3:
     status = st.selectbox("Status", status_types)
 
-# ---------------- CONFLICT ----------------
+# ---------------- CONFLICT CHECK ----------------
 def check_conflict(date, employee):
     for row in st.session_state.roster:
         if row["Date"] == str(date) and row["Employee"].lower() == employee.lower():
             return "🚨 Already assigned for this date!"
     return None
 
-# ---------------- ASSIGN ----------------
-if st.button("Assign"):
+# ---------------- ASSIGN DUTY ----------------
+if st.button("Assign Duty"):
     if employee.strip() == "":
         st.warning("Enter employee name")
     else:
@@ -63,20 +63,31 @@ if st.button("Assign"):
 # ---------------- DATAFRAME ----------------
 df = pd.DataFrame(st.session_state.roster)
 
-# ---------------- DISPLAY ----------------
+# ---------------- DISPLAY SECTIONS ----------------
 if not df.empty:
 
     st.subheader("📋 Vande Bharat & CCTV")
-    st.dataframe(df[df["Department"] == "Vande Bharat & CCTV"], use_container_width=True)
+    st.dataframe(
+        df[df["Department"] == "Vande Bharat & CCTV"],
+        use_container_width=True
+    )
 
     st.subheader("📋 Central Control")
-    st.dataframe(df[df["Department"] == "Central Control"], use_container_width=True)
+    st.dataframe(
+        df[df["Department"] == "Central Control"],
+        use_container_width=True
+    )
 
-    # ---------------- SWAP ----------------
+    # ---------------- SWAP FEATURE ----------------
     st.markdown("### 🔄 Swap Employee")
 
-    idx = st.number_input("Row Index", min_value=0, max_value=len(df)-1)
-    new_emp = st.text_input("New Employee")
+    idx = st.number_input(
+        "Row Index",
+        min_value=0,
+        max_value=len(df)-1
+    )
+
+    new_emp = st.text_input("New Employee Name")
 
     if st.button("Swap"):
         if new_emp.strip():
@@ -84,17 +95,21 @@ if not df.empty:
             st.success("✅ Swapped")
             st.rerun()
 
-    # ---------------- DELETE ----------------
+    # ---------------- DELETE FEATURE ----------------
     st.markdown("### 🗑️ Delete Row")
 
-    del_idx = st.number_input("Delete Index", min_value=0, max_value=len(df)-1)
+    del_idx = st.number_input(
+        "Delete Index",
+        min_value=0,
+        max_value=len(df)-1
+    )
 
     if st.button("Delete"):
         st.session_state.roster.pop(del_idx)
         st.success("Deleted")
         st.rerun()
 
-    # ---------------- CALENDAR ----------------
+    # ---------------- CALENDAR VIEW ----------------
     st.markdown("### 📅 Calendar View")
 
     cal = df.pivot_table(
@@ -106,15 +121,16 @@ if not df.empty:
 
     st.dataframe(cal, use_container_width=True)
 
-    # ---------------- DOWNLOAD (SINGLE SHEET) ----------------
-    st.markdown("### 📥 Download Final Roster")
+    # ---------------- SINGLE FULL DOWNLOAD ----------------
+    st.markdown("### 📥 Download Complete Roster")
 
-    download_df = df.sort_values(by=["Date", "Department", "Shift"])
+    final_df = pd.DataFrame(st.session_state.roster)
+    final_df = final_df.sort_values(by=["Date", "Department", "Shift"])
 
     st.download_button(
-        "📥 Download Full Roster (Single Sheet)",
-        download_df.to_csv(index=False),
-        file_name="final_roster.csv",
+        "📥 Download FULL Roster (Single Sheet)",
+        final_df.to_csv(index=False),
+        file_name="complete_roster.csv",
         mime="text/csv"
     )
 
