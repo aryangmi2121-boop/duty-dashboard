@@ -14,13 +14,13 @@ shifts = [
     "17-09 (16hr)"
 ]
 
-leave_types = ["None", "CR", "CL", "NH", "Leave", "Rest"]
+status_types = ["Duty", "CR", "CL", "NH", "Leave", "Rest"]
 
-# ---------------- SESSION STORAGE ----------------
+# ---------------- SESSION ----------------
 if "roster" not in st.session_state:
     st.session_state.roster = []
 
-# ---------------- INPUT UI ----------------
+# ---------------- INPUT ----------------
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -32,23 +32,22 @@ with col2:
     shift = st.selectbox("Shift", shifts)
 
 with col3:
-    leave = st.selectbox("Leave", leave_types)
+    status = st.selectbox("Status", status_types)
 
-# ---------------- CONFLICT CHECK ----------------
-def check_conflict(date, employee, leave):
+# ---------------- CONFLICT ----------------
+def check_conflict(date, employee):
     for row in st.session_state.roster:
         if row["Date"] == str(date) and row["Employee"].lower() == employee.lower():
-            return "🚨 Employee already assigned on this date!"
-        if leave != "None":
-            return f"🚨 Employee marked {leave}, cannot assign duty!"
+            return "🚨 Already assigned for this date!"
     return None
 
-# ---------------- ASSIGN DUTY ----------------
-if st.button("Assign Duty"):
+# ---------------- ASSIGN ----------------
+if st.button("Assign"):
     if employee.strip() == "":
         st.warning("Enter employee name")
     else:
-        conflict = check_conflict(date, employee, leave)
+        conflict = check_conflict(date, employee)
+
         if conflict:
             st.error(conflict)
         else:
@@ -57,50 +56,45 @@ if st.button("Assign Duty"):
                 "Department": department,
                 "Employee": employee,
                 "Shift": shift,
-                "Leave": leave
+                "Status": status
             })
-            st.success("✅ Duty Assigned")
+            st.success("✅ Saved")
 
-# ---------------- ROSTER SECTION ----------------
-st.subheader("📋 Roster")
-
+# ---------------- DATAFRAME ----------------
 df = pd.DataFrame(st.session_state.roster)
 
+# ---------------- DISPLAY ----------------
 if not df.empty:
-    st.dataframe(df, use_container_width=True)
 
-    # ---------------- SWAP SYSTEM ----------------
-    st.markdown("### 🔄 Swap Duty (Replace Employee)")
+    st.subheader("📋 Vande Bharat & CCTV")
+    st.dataframe(df[df["Department"] == "Vande Bharat & CCTV"], use_container_width=True)
 
-    idx = st.number_input(
-        "Row Index to Replace",
-        min_value=0,
-        max_value=len(df)-1
-    )
+    st.subheader("📋 Central Control")
+    st.dataframe(df[df["Department"] == "Central Control"], use_container_width=True)
 
-    new_emp = st.text_input("New Employee Name")
+    # ---------------- SWAP ----------------
+    st.markdown("### 🔄 Swap Employee")
 
-    if st.button("Swap Duty"):
-        if new_emp.strip() != "":
+    idx = st.number_input("Row Index", min_value=0, max_value=len(df)-1)
+    new_emp = st.text_input("New Employee")
+
+    if st.button("Swap"):
+        if new_emp.strip():
             st.session_state.roster[idx]["Employee"] = new_emp
-            st.success("✅ Duty Swapped")
+            st.success("✅ Swapped")
             st.rerun()
 
-    # ---------------- DELETE ROW ----------------
-    st.markdown("### 🗑️ Delete Specific Row")
+    # ---------------- DELETE ----------------
+    st.markdown("### 🗑️ Delete Row")
 
-    delete_idx = st.number_input(
-        "Row Index to Delete",
-        min_value=0,
-        max_value=len(df)-1
-    )
+    del_idx = st.number_input("Delete Index", min_value=0, max_value=len(df)-1)
 
-    if st.button("Delete Row"):
-        st.session_state.roster.pop(delete_idx)
-        st.success("Row deleted successfully!")
+    if st.button("Delete"):
+        st.session_state.roster.pop(del_idx)
+        st.success("Deleted")
         st.rerun()
 
-    # ---------------- CALENDAR VIEW ----------------
+    # ---------------- CALENDAR ----------------
     st.markdown("### 📅 Calendar View")
 
     cal = df.pivot_table(
@@ -114,11 +108,11 @@ if not df.empty:
 
     # ---------------- DOWNLOAD ----------------
     st.download_button(
-        "📥 Download Excel",
+        "📥 Download",
         df.to_csv(index=False),
-        file_name="roster.csv",
-        mime="text/csv"
+        "roster.csv",
+        "text/csv"
     )
 
 else:
-    st.info("No roster yet")
+    st.info("No data yet")
