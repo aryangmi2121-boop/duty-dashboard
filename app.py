@@ -16,11 +16,11 @@ shifts = [
 
 status_types = ["Duty", "CR", "CL", "NH", "Leave", "Rest"]
 
-# ---------------- SESSION ----------------
+# ---------------- SESSION STATE ----------------
 if "roster" not in st.session_state:
     st.session_state.roster = []
 
-# ---------------- INPUT ----------------
+# ---------------- INPUT FORM ----------------
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -34,43 +34,37 @@ with col2:
 with col3:
     status = st.selectbox("Status", status_types)
 
-# ---------------- CONFLICT CHECK ----------------
-def check_conflict(date, employee):
-    for row in st.session_state.roster:
-        if row["Date"] == str(date) and row["Employee"].lower() == employee.lower():
-            return "🚨 Already assigned for this date!"
-    return None
-
-# ---------------- ASSIGN ----------------
+# ---------------- ADD ENTRY ----------------
 if st.button("Assign Duty"):
     if employee.strip() == "":
-        st.warning("Enter employee name")
+        st.warning("Please enter employee name")
     else:
-        conflict = check_conflict(date, employee)
+        st.session_state.roster.append({
+            "Date": str(date),
+            "Department": department,
+            "Employee": employee,
+            "Shift": shift,
+            "Status": status
+        })
+        st.success("✅ Duty Assigned")
 
-        if conflict:
-            st.error(conflict)
-        else:
-            st.session_state.roster.append({
-                "Date": str(date),
-                "Department": department,
-                "Employee": employee,
-                "Shift": shift,
-                "Status": status
-            })
-            st.success("✅ Saved")
-
-# ---------------- DATAFRAME ----------------
+# ---------------- MASTER DATAFRAME ----------------
 df = pd.DataFrame(st.session_state.roster)
 
-# ---------------- DISPLAY ----------------
+# ---------------- DISPLAY SECTION (ONLY VIEW) ----------------
 if not df.empty:
 
     st.subheader("📋 Vande Bharat & CCTV")
-    st.dataframe(df[df["Department"] == "Vande Bharat & CCTV"], use_container_width=True)
+    st.dataframe(
+        df[df["Department"] == "Vande Bharat & CCTV"],
+        use_container_width=True
+    )
 
     st.subheader("📋 Central Control")
-    st.dataframe(df[df["Department"] == "Central Control"], use_container_width=True)
+    st.dataframe(
+        df[df["Department"] == "Central Control"],
+        use_container_width=True
+    )
 
     # ---------------- SWAP ----------------
     st.markdown("### 🔄 Swap Employee")
@@ -81,7 +75,7 @@ if not df.empty:
     if st.button("Swap"):
         if new_emp.strip():
             st.session_state.roster[idx]["Employee"] = new_emp
-            st.success("✅ Swapped")
+            st.success("✅ Swapped Successfully")
             st.rerun()
 
     # ---------------- DELETE ----------------
@@ -91,10 +85,10 @@ if not df.empty:
 
     if st.button("Delete"):
         st.session_state.roster.pop(del_idx)
-        st.success("Deleted")
+        st.success("🗑️ Row Deleted")
         st.rerun()
 
-    # ---------------- CALENDAR ----------------
+    # ---------------- CALENDAR VIEW ----------------
     st.markdown("### 📅 Calendar View")
 
     cal = df.pivot_table(
@@ -106,18 +100,19 @@ if not df.empty:
 
     st.dataframe(cal, use_container_width=True)
 
-    # ---------------- SINGLE DOWNLOAD (FIXED) ----------------
-    st.markdown("### 📥 Download Full Combined Roster")
+# ---------------- GLOBAL DOWNLOAD (IMPORTANT) ----------------
+st.markdown("## 📥 Download Complete Roster (ALL Departments Combined)")
 
-    final_df = pd.DataFrame(st.session_state.roster)
+final_df = pd.DataFrame(st.session_state.roster)
+
+if not final_df.empty:
     final_df = final_df.sort_values(by=["Date", "Department", "Shift"])
 
     st.download_button(
-        "📥 Download ALL Departments (Single Sheet)",
+        "📥 Download FULL Roster (Single Sheet)",
         final_df.to_csv(index=False),
         file_name="complete_roster.csv",
         mime="text/csv"
     )
-
 else:
-    st.info("No data yet")
+    st.info("No roster data available yet")
